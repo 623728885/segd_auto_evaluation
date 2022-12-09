@@ -5,7 +5,6 @@ import numpy as np
 from scipy import fft, interpolate
 from sklearn import preprocessing
 from sklearn.cluster import DBSCAN
-import sympy
 import matplotlib.pyplot as plt
 
 
@@ -47,16 +46,26 @@ def get_train_data(file_name, cut_assist_trace=True, standard_scale=False):
     return data_out, trace_head_in
 
 
-def calculate_attributes(data_frame):
-    # data_frame[]
-    series_abs_mean = data_frame.abs().mean()
-    # series_abs_
-    pd.concat(series_abs_mean)
+def calculate_attributes(index, columns):
+    df = pd.DataFrame(data, index=range(index), columns=range(columns))
+    mean_value = df.abs().mean().rename('mean_value')
+    main_frequency = pd.Series(index=range(data.shape[1]), name='main_frequency', dtype='float64')
+    average_energy = pd.Series(index=range(data.shape[1]), name='average_energy', dtype='float64')
+    total_energy = pd.Series(index=range(data.shape[1]), name='total_energy', dtype='float64')
+    for col in df.columns:
+        fx = fft.rfftfreq(nbr_samples, sampling_rate)
+        fy = np.abs(fft.rfft(df.iloc[:, col].to_numpy()))
+        main_frequency[col] = fx[np.where(fy == np.max(fy))[0][0]]
+        average_energy[col] = (df.iloc[:, col] ** 2).sum() / df.shape[0]
+        total_energy[col] = (df.iloc[:, col] ** 2).sum()
+    attribute_df = pd.concat([mean_value, main_frequency, average_energy, total_energy], axis=1)
+    return attribute_df
 
 
-def effective_bandwidth():
+def effective_bandwidth(index, columns):
+    df = pd.DataFrame(data, index=range(index), columns=range(columns))
     freq_range = fft.rfftfreq(nbr_samples, sampling_rate)
-    amplitude = np.abs(fft.rfft(trace_data_table.mean(axis=1).to_numpy()))
+    amplitude = np.abs(fft.rfft(df.mean(axis=1).to_numpy()))
     db = 20 * np.log10(amplitude)
     main_frequency = freq_range[np.where(db == np.max(db))[0][0]]
     max_amp = np.max(db)
@@ -74,28 +83,25 @@ def effective_bandwidth():
     # plt.show()
 
 
-data, headers = get_train_data('/data/t3.segd', standard_scale=False)
-trace_data_table = pd.DataFrame(data, index=range(data.shape[0]), columns=range(data.shape[1]))
+data, headers = get_train_data('./data/t3.segd', standard_scale=False)
+data_index, data_columns = data.shape[0], data.shape[1]
+
 sampling_rate, nbr_samples = 1 / headers.traces[0].stats.sampling_rate, data.shape[0]
-# attributes_list = ['main_frequency', 'average_energy', 'total_energy']
-mode = 'shot'
-if mode == 'trace':
-    main_frequency = pd.Series(index=range(data.shape[1]), dtype='float64')
-    average_energy = pd.Series(index=range(data.shape[1]), dtype='float64')
-    total_energy = pd.Series(index=range(data.shape[1]), dtype='float64')
-    for col in trace_data_table.columns:
-        fx = fft.rfftfreq(nbr_samples, sampling_rate)
-        fy = np.abs(fft.rfft(trace_data_table.iloc[:, col].to_numpy()))
-        main_frequency[col] = fx[np.where(fy == np.max(fy))[0][0]]
+trace_attribute_table = calculate_attributes(data_index, data_columns)
+std = trace_attribute_table['mean_value'].std()
+mean = trace_attribute_table['mean_value'].mean()
+one_std = (abs(trace_attribute_table['mean_value'] - mean) - 1 * std) > 0
+one_std = one_std[one_std]
+two_std = (abs(trace_attribute_table['mean_value'] - mean) - 2 * std) > 0
+two_std = two_std[two_std]
+three_std = (abs(trace_attribute_table['mean_value'] - mean) - 3 * std) > 0
+three_std = three_std[three_std]
+a = trace_attribute_table.iloc[three_std.index]
+three_alpha = trace_attribute_table[[abs(trace_attribute_table['mean_value'] - mean) > 3 * std]]
 
-        average_energy[col] = (trace_data_table.iloc[:, col] ** 2).sum() / trace_data_table.shape[0]
-        total_energy[col] = (trace_data_table.iloc[:, col] ** 2).sum()
+# 按炮计算属性
+# average_energy = (trace_data_table ** 2).sum().sum() / (trace_data_table.shape[0] * trace_data_table.shape[1])
+# total_energy = (trace_data_table ** 2).sum().sum()
+# index = effective_bandwidth()
 
-        plt.plot(fx, fy)
-        plt.show()
-else:
-    average_energy = (trace_data_table ** 2).sum().sum() / (trace_data_table.shape[0] * trace_data_table.shape[1])
-    total_energy = (trace_data_table ** 2).sum().sum()
-    index = effective_bandwidth()
-
-trace_data_table.to_csv('t3.csv')
+trace_attribute_table.to_csv('t3.csv')

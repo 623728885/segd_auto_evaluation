@@ -201,7 +201,7 @@ def _make_stats(fi, tr_block_start, details):
         if nbr_tr_header_block > 0:
             stats_tr_headers.update(
                 _read_trace_headers(fi, tr_block_start, nbr_tr_header_block))
-    return Stats(stats_dict)
+    return stats_dict
 
 
 def _read_trace_headers(fi, trace_block_start, nbr_trace_header):
