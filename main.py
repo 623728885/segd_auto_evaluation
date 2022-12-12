@@ -83,11 +83,12 @@ def effective_bandwidth(index, columns):
     # plt.show()
 
 
-data, headers = get_train_data('./data/t3.segd', standard_scale=False)
+data, headers = get_train_data('./data/t3.segd', standard_scale=True)
 data_index, data_columns = data.shape[0], data.shape[1]
 
 sampling_rate, nbr_samples = 1 / headers.traces[0].stats.sampling_rate, data.shape[0]
 trace_attribute_table = calculate_attributes(data_index, data_columns)
+corr = trace_attribute_table.corr()
 std = trace_attribute_table['mean_value'].std()
 mean = trace_attribute_table['mean_value'].mean()
 one_std = (abs(trace_attribute_table['mean_value'] - mean) - 1 * std) > 0
@@ -96,9 +97,9 @@ two_std = (abs(trace_attribute_table['mean_value'] - mean) - 2 * std) > 0
 two_std = two_std[two_std]
 three_std = (abs(trace_attribute_table['mean_value'] - mean) - 3 * std) > 0
 three_std = three_std[three_std]
-a = trace_attribute_table.iloc[three_std.index]
-three_alpha = trace_attribute_table[[abs(trace_attribute_table['mean_value'] - mean) > 3 * std]]
-
+a = trace_attribute_table.iloc[two_std.index]
+plt.scatter(trace_attribute_table['mean_value'], trace_attribute_table['main_frequency'])
+plt.show()
 # 按炮计算属性
 # average_energy = (trace_data_table ** 2).sum().sum() / (trace_data_table.shape[0] * trace_data_table.shape[1])
 # total_energy = (trace_data_table ** 2).sum().sum()
