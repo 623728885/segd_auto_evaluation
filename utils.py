@@ -87,8 +87,14 @@ def calculate_std(df, num):
         raise ValueError
 
 
-def plot_trace(trace_df):
-    y = np.linspace(0, trace_df.shape[0] - 1, trace_df.shape[0])
-    for trace in range(trace_df.shape[1]):
-        plt.plot(trace_df[:, trace], y)
+def plot_trace(data):
+    max_v = data.abs().max()
+    plt.axis([0, data.shape[1], data.shape[0], 0])
+    plt.xticks(ticks=range(data.shape[1]), labels=data.columns)
+    data = data / max_v
+    data = data.to_numpy()
+    for i in range(1, data.shape[1] + 1):
+        data[:, i - 1] += i
+    for trace in range(data.shape[1]):
+        plt.plot(data[:, trace], np.linspace(0, data.shape[0] - 1, data.shape[0]), color='black')
     plt.show()

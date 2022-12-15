@@ -12,6 +12,7 @@ three_std = calculate_std(trace_attribute_table['mean_value'], 3)
 a = trace_attribute_table.iloc[two_std]
 b = trace_attribute_table.iloc[one_std]
 b_data = data.loc[:, one_std]
+
 plot_trace(b_data)
 plt.scatter(trace_attribute_table['mean_value'], trace_attribute_table['main_frequency'])
 plt.show()
